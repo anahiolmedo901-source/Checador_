@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="HomeScene" extends="Group">
+    <interface>
+        <field id="backend" type="string" />
+        <field id="code" type="string" />
+        <field id="token" type="string" />
+        <field id="start" type="bool" value="false" />
+        <field id="openSetup" type="bool" value="false" />
+    </interface>
+    <script type="text/brightscript" uri="HomeScene.brs" />
+</component>

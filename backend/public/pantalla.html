@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pantalla | Checador</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --panel: #111a2e;
+    --panel2: #16203a;
+    --line: #24324f;
+    --text: #e8eefc;
+    --muted: #8fa3c8;
+    --ok: #3ddc84;
+    --warn: #ffb020;
+    --err: #ff5470;
+    --info: #38bdf8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+    touch-action: manipulation;
+  }
+  .hidden { display: none !important; }
+
+  /* ---- Setup ---- */
+  #setup {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 30%, #14213d, #0b1220);
+    z-index: 50; padding: 24px;
+  }
+  .setup-card {
+    width: 100%; max-width: 620px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 20px; padding: 34px;
+  }
+  .setup-card h1 { font-size: 26px; letter-spacing: .5px; margin-bottom: 6px; }
+  .setup-card p { color: var(--muted); margin-bottom: 22px; font-size: 17px; line-height: 1.5; }
+  .setup-card label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 5px; text-transform: uppercase; letter-spacing: .8px; }
+  .setup-card input {
+    width: 100%; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 10px; padding: 17px 18px; font-size: 26px; letter-spacing: 5px; text-align: center; outline: none;
+  }
+  .setup-card input:focus { border-color: var(--info); box-shadow: 0 0 0 2px rgba(56,189,248,.25); }
+
+  /* ---- Teclado virtual (TV / control remoto) ---- */
+  .kbd { margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 12px; }
+  .kbd-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+  .kbd-grid button {
+    min-height: 42px; border-radius: 7px; font-size: 16px; font-weight: 600;
+    background: var(--panel); border: 1px solid var(--line); color: var(--text); cursor: pointer;
+  }
+  .kbd-grid button:focus, .kbd-grid button:hover {
+    border-color: var(--info); outline: 2px solid rgba(56,189,248,.38); outline-offset: 1px;
+  }
+  .kbd-grid .fn { color: var(--muted); font-size: 12px; }
+  .kbd-grid .wide { grid-column: span 2; }
+  @media (max-width: 720px) {
+    .kbd-grid { grid-template-columns: repeat(7, 1fr); }
+    #setup { overflow: auto; }
+  }
+  .btn {
+    appearance: none; border: none; cursor: pointer; border-radius: 10px;
+    padding: 14px 18px; font-size: 15px; font-weight: 600;
+  }
+  .btn-primary { width: 100%; margin-top: 22px; background: var(--ok); color: #062b16; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .setup-err { color: var(--err); font-size: 13px; margin-top: 12px; min-height: 18px; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 14px; line-height: 1.4; }
+
+  /* ---- Dashboard ---- */
+  #app { height: 100%; display: flex; flex-direction: column; }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 26px; border-bottom: 1px solid var(--line); background: rgba(17,26,46,.6);
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand h2 { font-size: 20px; font-weight: 600; }
+  .brand .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .clock { text-align: right; }
+  .clock .time { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .clock .date { color: var(--muted); font-size: 13px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 7px; border-radius: 999px;
+    padding: 6px 13px; font-size: 12px; font-weight: 700; letter-spacing: .4px;
+    background: var(--panel2); border: 1px solid var(--line); color: var(--muted);
+  }
+  .badge.on { color: var(--ok); border-color: rgba(61,220,132,.4); }
+  .badge.off { color: var(--err); border-color: rgba(255,84,112,.4); }
+  .badge.warn { color: var(--warn); border-color: rgba(255,176,32,.4); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+
+  /* counts */
+  #counts { position: relative; flex: 0 0 auto; }
+  .counts-wrap { display: flex; margin: 12px 26px; gap: 12px; }
+  .count-box {
+    flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    text-align: center; padding: 10px 8px;
+  }
+  .count-box .num { font-size: 28px; font-weight: 800; line-height: 1; }
+  .count-box .lbl { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .6px; }
+  .count-box.present .num { color: var(--ok); }
+  .count-box.total .num { color: var(--text); }
+  .count-box.late .num { color: var(--warn); }
+  .count-box.missing .num { color: var(--err); }
+  .count-box.excused .num { color: var(--info); }
+
+  /* main rotation */
+  main { position: relative; display: flex; flex: 1; min-height: 0; overflow: hidden; padding: 0 26px; }
+  #rotation { height: 100%; flex: 1; min-width: 0; }
+  .slide { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 30px 10px; }
+  .slide .big { font-size: clamp(30px, 6vw, 64px); font-weight: 800; line-height: 1.1; }
+  .slide .med { font-size: clamp(18px, 3vw, 30px); color: var(--text); margin-top: 10px; }
+  .slide .small { font-size: clamp(13px, 1.6vw, 18px); color: var(--muted); margin-top: 16px; max-width: 900px; white-space: pre-wrap; }
+  .slide.media { padding: 0; }
+  .slide.media img, .slide.media video { max-width: 100%; max-height: 100%; border-radius: 14px; object-fit: contain; }
+  .empty-state { color: var(--muted); font-size: 18px; }
+
+  /* last checks */
+  #lastchecks {
+    position: relative; flex: 0 0 330px; align-self: center; max-height: calc(100% - 32px); overflow: hidden; margin-left: 18px; z-index: 10;
+    background: rgba(11,18,32,.85); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    backdrop-filter: blur(6px);
+  }
+  #lastchecks h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 8px; }
+  .lc-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(36,50,79,.5); }
+  .lc-item:last-child { border-bottom: none; }
+  .lc-name { flex: 1; font-size: 15px; font-weight: 600; }
+  .lc-time { color: var(--muted); font-size: 13px; }
+  .lc-tag { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+  .tag-in { background: rgba(61,220,132,.16); color: var(--ok); }
+  .tag-out { background: rgba(56,189,248,.16); color: var(--info); }
+  .tag-break { background: rgba(255,176,32,.16); color: var(--warn); }
+  .tag-late { background: rgba(255,84,112,.16); color: var(--err); }
+
+  /* live overlay */
+  #overlay {
+    position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+    background: rgba(11,18,32,.86); opacity: 0; pointer-events: none; transition: opacity .18s ease;
+  }
+  #overlay.show { opacity: 1; }
+  #overlay .who { font-size: clamp(34px, 7vw, 84px); font-weight: 800; }
+  #overlay .what { font-size: clamp(22px, 4vw, 46px); font-weight: 700; margin-top: 12px; }
+  #overlay .whent { font-size: clamp(18px, 3vw, 34px); color: var(--muted); margin-top: 8px; }
+  #overlay.chk-in .what { color: var(--ok); }
+  #overlay.chk-late .what { color: var(--err); }
+  #overlay.chk-break .what { color: var(--warn); }
+  #overlay.chk-out .what { color: var(--info); }
+  #overlay.chk-incident .what { color: var(--warn); }
+
+  .footer-note { position: absolute; bottom: 8px; left: 26px; color: #33415e; font-size: 11px; }
+
+  @media (max-width: 720px) {
+    .count-box .num { font-size: 20px; }
+    #lastchecks { flex-basis: 220px; }
+    header { padding: 10px 14px; }
+    main { padding: 0 14px; }
+    .counts-wrap { margin: 10px 14px; }
+    .setup-card { padding: 22px; }
+    .setup-card input { font-size: 22px; }
+    .kbd-grid button { min-height: 38px; }
+  }
+  @media (max-height: 700px) {
+    .counts-wrap { margin-top: 6px; margin-bottom: 6px; gap: 8px; }
+    .count-box { padding: 7px 6px; }
+    .count-box .num { font-size: 23px; }
+    #lastchecks { max-height: calc(100% - 16px); }
+  }
+</style>
+</head>
+<body>
+
+<div id="setup">
+  <div class="setup-card">
+    <h1>Pantalla Checador</h1>
+    <p>En Administración, abre <b>Pantallas → Conectar TV</b> y escribe aquí el código temporal. La conexión se completa automáticamente.</p>
+    <label for="f-pairing">Código de conexión</label>
+    <input id="f-pairing" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD-EFGH" maxlength="9" aria-label="Código de conexión">
+    <div class="kbd">
+      <div class="kbd-grid" id="kbd-grid"></div>
+    </div>
+    <button id="btn-save" class="btn btn-primary">Conectar</button>
+    <div id="setup-err" class="setup-err"></div>
+    <div class="hint">El código vence en 10 minutos y se usa una sola vez. Usa <b>F</b> para pantalla completa.</div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="brand">
+      <div>
+        <h2 id="branch-name">—</h2>
+        <div class="sub" id="display-name">—</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <span id="status-badge" class="badge">Conectando…</span>
+      <div class="clock">
+        <div class="time" id="clock">--:--:--</div>
+        <div class="date" id="date">—</div>
+      </div>
+    </div>
+  </header>
+
+  <div id="counts"><div class="counts-wrap">
+    <div class="count-box present"><div class="num" id="c-present">0</div><div class="lbl">Presentes</div></div>
+    <div class="count-box total"><div class="num" id="c-total">0</div><div class="lbl">Esperados</div></div>
+    <div class="count-box late"><div class="num" id="c-late">0</div><div class="lbl">Retardos</div></div>
+    <div class="count-box excused"><div class="num" id="c-excused">0</div><div class="lbl">Justificados</div></div>
+    <div class="count-box missing"><div class="num" id="c-missing">0</div><div class="lbl">Faltas</div></div>
+  </div></div>
+
+  <main>
+    <div id="rotation"><div class="slide"><div class="empty-state">Esperando datos…</div></div></div>
+    <div id="lastchecks" class="hidden">
+      <h3>Últimos checados</h3>
+      <div id="lc-list"></div>
+    </div>
+    <div class="footer-note">Checador · Pantalla Web</div>
+  </main>
+</div>
+
+<div id="overlay">
+  <div class="who" id="ov-who"></div>
+  <div class="what" id="ov-what"></div>
+  <div class="whent" id="ov-when"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORE_KEY = 'checador-display-v1';
+  var cfg = null;
+  try { cfg = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { cfg = null; }
+
+  var ws = null;
+  var backoff = 0;
+  var shouldRun = false;
+  var overlayTimer = null;
+  var clockTimer = null;
+  var rotTimer = null;
+  var rotIndex = 0;
+  var snapshot = null;
+  var heartbeatTimer = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+
+  // ---------- Setup ----------
+  if (cfg && cfg.code && cfg.token) {
+    start();
+  } else {
+    showSetup();
+  }
+
+  function showSetup() {
+    $('setup').classList.remove('hidden');
+    setupKbd();
+    $('btn-save').addEventListener('click', pairDisplay);
+    $('f-pairing').addEventListener('input', function () {
+      var value = $('f-pairing').value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+      $('f-pairing').value = value.length > 4 ? value.slice(0, 4) + '-' + value.slice(4) : value;
+    });
+    $('f-pairing').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('btn-save').click(); });
+  }
+
+  function pairDisplay() {
+    var pairingCode = $('f-pairing').value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    if (pairingCode.length !== 8) { $('setup-err').textContent = 'Ingresa el código de 8 caracteres que muestra Administración.'; return; }
+    var button = $('btn-save');
+    button.disabled = true;
+    button.textContent = 'Validando código…';
+    $('setup-err').textContent = '';
+    fetch('/api/displays/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pairing_code: pairingCode, software: 'web-pantalla', os_version: navigator.userAgent })
+    }).then(function (res) {
+      return res.json().then(function (data) {
+        if (!res.ok || !data.ok) throw new Error(data.error && data.error.message || 'El código no es válido, venció o ya se utilizó.');
+        return data;
+      });
+    }).then(function (data) {
+      cfg = { code: data.display.code, token: data.token, base: location.origin };
+      localStorage.setItem(STORE_KEY, JSON.stringify(cfg));
+      $('setup').classList.add('hidden');
+      start();
+    }).catch(function (err) {
+      $('setup-err').textContent = err.message || 'No se pudo conectar. Revisa la red e inténtalo de nuevo.';
+      button.disabled = false;
+      button.textContent = 'Conectar';
+    });
+  }
+
+  // ---- Teclado virtual (TV / control remoto) ----
+  function kbdPress(ch) {
+    var el = $('f-pairing');
+    var value = el.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    if (value.length >= 8) return;
+    value += ch;
+    el.value = value.length > 4 ? value.slice(0, 4) + '-' + value.slice(4) : value;
+  }
+  function kbdBack() { var el = $('f-pairing'); el.value = el.value.slice(0, -1); }
+  function kbdClear() { $('f-pairing').value = ''; }
+
+  function setupKbd() {
+    var rows = [
+      ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+      ['Z', 'X', 'C', 'V', 'B', 'N', 'M', { key: '⌫', fn: 'back', cls: 'fn' }, { key: 'Borrar', fn: 'clear', cls: 'fn wide' }]
+    ];
+    var html = '';
+    for (var r = 0; r < rows.length; r++) {
+      for (var c = 0; c < rows[r].length; c++) {
+        var it = rows[r][c];
+        if (typeof it === 'object') {
+          html += '<button type="button" data-k="' + it.fn + '" class="' + it.cls + '">' + it.key + '</button>';
+        } else {
+          html += '<button type="button" data-k="char" data-c="' + it + '">' + it + '</button>';
+        }
+      }
+    }
+    $('kbd-grid').innerHTML = html;
+
+    $('kbd-grid').addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      var k = b.getAttribute('data-k');
+      if (k === 'char') kbdPress(b.getAttribute('data-c'));
+      else if (k === 'back') kbdBack();
+      else if (k === 'clear') kbdClear();
+    });
+  }
+
+  // ---------- Connect ----------
+  function start() {
+    $('setup').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    connect();
+    clockTimer = setInterval(renderClock, 1000);
+    renderClock();
+  }
+
+  function wsUrl() {
+    var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    var host = location.host;
+    if (cfg.base) {
+      var u = cfg.base.replace(/\/+$/, '');
+      host = u.replace(/^https?:\/\//, '');
+      proto = u.indexOf('https') === 0 ? 'wss://' : 'ws://';
+    }
+    return proto + host + '/api/displays/ws';
+  }
+
+  function connect() {
+    shouldRun = true;
+    setBadge('Conectando…', 'warn');
+    try {
+      ws = new WebSocket(wsUrl(), ['dc-' + cfg.code, 'tk-' + cfg.token]);
+    } catch (err) {
+      scheduleReconnect();
+      return;
+    }
+    ws.onopen = function () {
+      backoff = 0;
+      setBadge('En línea', 'on');
+      sendMeta();
+      ensureHeartbeat();
+    };
+    ws.onmessage = function (ev) { handleMessage(ev.data); };
+    ws.onclose = function () {
+      setBadge('Sin conexión', 'off');
+      stopHeartbeat();
+      scheduleReconnect();
+    };
+    ws.onerror = function () { /* onclose cubre el reintento */ };
+  }
+
+  function scheduleReconnect() {
+    if (!shouldRun) return;
+    stopHeartbeat();
+    if (ws) { try { ws.close(); } catch (e) { /* noop */ } ws = null; }
+    backoff = Math.min(backoff + 1, 6);
+    var secs = Math.min(30, Math.round(Math.pow(2, backoff - 1) * (0.6 + Math.random() * 0.8)));
+    setBadge(backoff > 1 ? 'Reconectando…' : 'Conectando…', 'warn');
+    setTimeout(function () { if (shouldRun) connect(); }, secs * 1000);
+  }
+
+  function sendMeta() {
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({ type: 'meta', software: 'web-pantalla', os_version: navigator.userAgent }));
+    }
+  }
+
+  function ensureHeartbeat() {
+    if (heartbeatTimer) return;
+    heartbeatTimer = setInterval(function () {
+      if (ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({ type: 'heartbeat' }));
+      }
+    }, 15000);
+    if (heartbeatTimer.unref) heartbeatTimer.unref();
+  }
+  function stopHeartbeat() {
+    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+  }
+
+  // ---------- Messages ----------
+  function handleMessage(raw) {
+    var msg;
+    try { msg = JSON.parse(raw); } catch (e) { return; }
+    switch (msg.type) {
+      case 'hello':
+        if (msg.displayId) $('display-name').textContent = esc(msg.code || cfg.code) + ' · ' + esc(msg.branchId || '');
+        break;
+      case 'snapshot':
+        snapshot = msg.snapshot || null;
+        renderSnapshot();
+        break;
+      case 'check':
+        showOverlay(msg.check);
+        break;
+      case 'refresh':
+        /* el snapshot debounceado llega solo */
+        break;
+      case 'ping':
+        break;
+      case 'revoked':
+        setBadge('No autorizado', 'off');
+        return doFatal('Token revocado por el administrador.');
+      case 'unauthorized':
+        setBadge('No autorizado', 'off');
+        return doFatal('Código o token no válido.');
+      case 'replaced':
+        setBadge('No autorizado', 'off');
+        return doFatal('Otra conexión tomó esta pantalla.');
+    }
+  }
+
+  function doFatal(msg) {
+    shouldRun = false;
+    stopHeartbeat();
+    if (ws) { try { ws.close(); } catch (e) { /* noop */ } }
+    cfg = null;
+    localStorage.removeItem(STORE_KEY);
+    $('setup-err').textContent = msg;
+    $('setup').classList.remove('hidden');
+  }
+
+  // ---------- Snapshot render ----------
+  function renderSnapshot() {
+    if (!snapshot) return;
+    var counts = snapshot.counts || {};
+    setNum('c-present', counts.present);
+    setNum('c-total', counts.total);
+    setNum('c-late', counts.late);
+    setNum('c-excused', counts.excused);
+    setNum('c-missing', counts.missing);
+
+    var branch = snapshot.branch || {};
+    $('branch-name').textContent = branch.name ? branch.name + (branch.address ? ' · ' + branch.address : '') : 'Sucursal';
+
+    var checks = snapshot.last_checks || [];
+    var list = $('lc-list');
+    list.innerHTML = '';
+    if (checks.length) $('lastchecks').classList.remove('hidden');
+    for (var i = 0; i < checks.length; i++) {
+      var c = checks[i];
+      var div = document.createElement('div');
+      div.className = 'lc-item';
+      var tag = document.createElement('span');
+      tag.className = 'lc-tag ' + tagClass(c.check_type);
+      tag.textContent = c.label || c.check_type || '—';
+      var name = document.createElement('span');
+      name.className = 'lc-name';
+      name.textContent = c.name || '—';
+      var time = document.createElement('span');
+      time.className = 'lc-time';
+      time.textContent = c.time || '';
+      div.appendChild(name); div.appendChild(tag); div.appendChild(time);
+      list.appendChild(div);
+    }
+
+    startRotation();
+  }
+
+  function setNum(id, v) { var el = document.getElementById(id); if (el) { el.textContent = (v == null ? 0 : v); } }
+
+  function tagClass(type) {
+    var t = String(type || '');
+    if (t === 'check_in' || t.indexOf('late') === 0) return 'tag-in';
+    if (t === 'check_out') return 'tag-out';
+    if (t === 'break_out' || t === 'break_in') return 'tag-break';
+    if (t.indexOf('missing') >= 0 || t.indexOf('incident') >= 0) return 'tag-late';
+    return 'tag-in';
+  }
+
+  // ---------- Rotation ----------
+  function startRotation() {
+    if (rotTimer) { clearTimeout(rotTimer); rotTimer = null; }
+    if (!snapshot || !snapshot.playlist || !snapshot.playlist.length) {
+      rotationEl().innerHTML = '<div class="slide"><div class="empty-state">Esperando playlist…</div></div>';
+      return;
+    }
+    showItem(rotIndex);
+    rotTimer = setTimeout(nextItem, durationOf(rotIndex));
+  }
+
+  function rotationEl() { return document.getElementById('rotation'); }
+
+  function durationOf(i) {
+    var it = snapshot.playlist[i];
+    var d = it && it.duration_s ? it.duration_s : 8;
+    return Math.max(2, d) * 1000;
+  }
+
+  function nextItem() {
+    if (!snapshot || !snapshot.playlist.length) return;
+    rotIndex = (rotIndex + 1) % snapshot.playlist.length;
+    showItem(rotIndex);
+    rotTimer = setTimeout(nextItem, durationOf(rotIndex));
+  }
+
+  function showItem(i) {
+    var it = snapshot.playlist[i];
+    if (!it) return;
+    var el = rotationEl();
+    var html = '';
+    if (it.item_type === 'stats') {
+      var c = (snapshot.counts || {});
+      html = '<div class="slide">'
+        + '<div class="big">' + esc(c.present || 0) + '</div>'
+        + '<div class="med">Personas presentes hoy</div>'
+        + '<div class="small">' + esc(c.late || 0) + ' retardos · ' + esc(c.missing || 0) + ' faltas</div>'
+        + '</div>';
+    } else if (it.item_type === 'announcement' && it.announcement) {
+      var a = it.announcement;
+      html = '<div class="slide">'
+        + '<div class="med">' + esc(a.title || 'Aviso') + '</div>'
+        + '<div class="small">' + esc(a.body || '') + '</div>'
+        + '</div>';
+    } else if (it.item_type === 'media' && it.media) {
+      var m = it.media;
+      var url = m.signed_url || m.file_path || '';
+      if (/\.(mp4|m4v|webm|ogv|mov)(\?|$)/i.test(url) || m.kind === 'video') {
+        html = '<div class="slide media"><video src="' + esc(url) + '" autoplay loop playsinline muted></video></div>';
+      } else {
+        html = '<div class="slide media"><img src="' + esc(url) + '" alt=""></div>';
+      }
+    } else {
+      html = '<div class="slide"><div class="empty-state">—</div></div>';
+    }
+    el.innerHTML = html;
+    var mediaEl = el.querySelector('video');
+    if (mediaEl) {
+      mediaEl.onerror = function () { rotTimer && clearTimeout(rotTimer); nextItem(); };
+    }
+  }
+
+  // ---------- Live overlay ----------
+  function showOverlay(check) {
+    if (!check) return;
+    var who = check.name || 'Empleado';
+    var type = String(check.check_type || '');
+    var cls = 'chk-in';
+    var label = 'Entrada';
+    if (type === 'check_out') { cls = 'chk-out'; label = 'Salida'; }
+    else if (type === 'break_out') { cls = 'chk-break'; label = 'Salida de comida'; }
+    else if (type === 'break_in') { cls = 'chk-break'; label = 'Regreso de comida'; }
+    else if (type === 'late' || type.indexOf('late') === 0) { cls = 'chk-late'; label = 'Retardo'; }
+    else if (type.indexOf('incident') === 0) { cls = 'chk-incident'; label = 'Incidencia'; }
+
+    var ov = $('overlay');
+    ov.className = 'overlay ' + cls;
+    $('ov-who').textContent = who;
+    $('ov-what').textContent = label;
+    $('ov-when').textContent = check.full_time || check.time || '';
+    ov.classList.add('show');
+    if (overlayTimer) clearTimeout(overlayTimer);
+    var ms = 6000;
+    if (snapshot && snapshot.config && snapshot.config.check_overlay_s) ms = snapshot.config.check_overlay_s * 1000;
+    overlayTimer = setTimeout(function () { ov.classList.remove('show'); }, ms);
+  }
+
+  // ---------- Clock ----------
+  function renderClock() {
+    var d = new Date();
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    $('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    $('date').textContent = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  function setBadge(text, kind) {
+    var b = $('status-badge');
+    b.textContent = text;
+    b.className = 'badge ' + (kind || '');
+    if (kind === 'on') b.classList.add('on');
+    if (kind === 'off') b.classList.add('off');
+    if (kind === 'warn') b.classList.add('warn');
+    if (text === 'En línea') {
+      b.innerHTML = '<span class="dot"></span>' + esc(text);
+    }
+  }
+
+  // ---------- Fullscreen (F / tap) ----------
+  function toggleFull() {
+    var d = document;
+    if (!d.fullscreenElement) {
+      if (d.documentElement.requestFullscreen) d.documentElement.requestFullscreen().catch(function () {});
+    } else if (d.exitFullscreen) {
+      d.exitFullscreen().catch(function () {});
+    }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'f' || e.key === 'F') toggleFull();
+  });
+  document.addEventListener('dblclick', toggleFull);
+
+  window.addEventListener('online', function () { if (cfg && !ws) connect(); });
+})();
+</script>
+</body>
+</html>

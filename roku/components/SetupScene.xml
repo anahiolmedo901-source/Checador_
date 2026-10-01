@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="SetupScene" extends="Group">
+    <interface>
+        <field id="mode" type="string" value="initial" />
+        <field id="backend" type="string" />
+        <field id="code" type="string" />
+        <field id="token" type="string" />
+        <field id="start" type="bool" value="false" />
+        <field id="done" type="assocarray" />
+    </interface>
+    <script type="text/brightscript" uri="SetupScene.brs" />
+</component>

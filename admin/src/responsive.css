@@ -1,0 +1,163 @@
+/* Ajustes responsivos globales del panel (móvil primero) */
+
+html, body, #root { min-height: 100%; }
+body { overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+
+/* Respeta notch / barra inferior en iOS y Android */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+.app-main { padding-bottom: calc(var(--mantine-spacing-md) + var(--safe-bottom)); min-width: 0; }
+.mantine-AppShell-header { padding-top: var(--safe-top); }
+
+.logout-btn:hover { background: var(--mantine-color-default-hover); }
+
+/* Los inputs con ancho fijo (w={200}, etc.) nunca deben exceder la pantalla */
+.mantine-InputWrapper-root,
+.mantine-Input-wrapper,
+.mantine-Select-root,
+.mantine-TextInput-root { max-width: 100%; }
+
+@media (max-width: 48em) {
+  /* Filtros: cada control ocupa todo el ancho */
+  .mantine-Paper-root .mantine-Group-root > .mantine-InputWrapper-root,
+  .mantine-Paper-root .mantine-Group-root > .mantine-Select-root,
+  .mantine-Paper-root .mantine-Group-root > .mantine-TextInput-root {
+    width: 100% !important;
+    flex: 1 1 100%;
+  }
+
+  /* Formularios en modales: campos en columna en lugar de aplastarse */
+  .mantine-Group-root[data-grow] { flex-direction: column; align-items: stretch; }
+  .mantine-Group-root[data-grow] > * { max-width: 100% !important; width: 100%; }
+
+  /* Modales y cajones a pantalla completa, sin salirse del viewport */
+  .mantine-Modal-content,
+  .mantine-Drawer-content {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100dvh;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+  .mantine-Modal-inner { padding: 0 !important; }
+  .mantine-Modal-body,
+  .mantine-Drawer-body { padding-bottom: calc(var(--mantine-spacing-md) + var(--safe-bottom)); }
+
+  /* Botones de acción del encabezado de página en fila completa */
+  .mantine-Paper-root > .mantine-Group-root > .mantine-Group-root { width: 100%; }
+}
+
+/* Notificaciones sin cubrir el encabezado en móvil */
+.mantine-Notifications-root { max-width: calc(100vw - 2rem); }
+
+/* =====================================================================
+   TEMA VISUAL — corporativo, sobrio y ordenado
+   Neutros: gris #F5F6F8 / bordes #E2E5EA · Acento único: azul institucional
+   ===================================================================== */
+:root {
+  --surface-bg: #F5F6F8;
+  --border-soft: #E2E5EA;
+  --text-strong: #1F2933;
+  --text-muted: #5F6B7A;
+}
+
+body { background: var(--surface-bg); color: var(--text-strong); font-family: var(--mantine-font-family); }
+[data-mantine-color-scheme='dark'] body { background: var(--mantine-color-dark-8); color: var(--mantine-color-dark-0); }
+
+/* ---- Encabezado superior: blanco, plano ---- */
+.app-header {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  box-shadow: none;
+}
+[data-mantine-color-scheme='dark'] .app-header { background: var(--mantine-color-dark-7) !important; border-color: var(--mantine-color-dark-4) !important; }
+
+/* ---- Menú lateral: blanco con borde, activo discreto ---- */
+.app-navbar {
+  background: #FFFFFF !important;
+  border-right: 1px solid var(--border-soft) !important;
+}
+[data-mantine-color-scheme='dark'] .app-navbar { background: var(--mantine-color-dark-7) !important; border-color: var(--mantine-color-dark-4) !important; }
+.app-navbar .mantine-NavLink-root {
+  color: var(--text-muted);
+  border-radius: 6px;
+  margin-bottom: 2px;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+}
+.app-navbar .mantine-NavLink-root:hover { background: #F0F2F5; color: var(--text-strong); }
+.app-navbar .mantine-NavLink-root[data-active] {
+  --nl-bg: var(--mantine-color-brand-0) !important;
+  --nl-hover: var(--mantine-color-brand-0) !important;
+  --nl-color: var(--mantine-color-brand-8) !important;
+  background: var(--mantine-color-brand-0) !important;
+  color: var(--mantine-color-brand-8) !important;
+  border-left-color: var(--mantine-color-brand-6);
+  font-weight: 600;
+  box-shadow: none;
+}
+.app-navbar .mantine-NavLink-label { font-weight: inherit; font-size: 14px; }
+.app-navbar .logout-btn { color: var(--text-muted); font-weight: 500; }
+.app-navbar .logout-btn:hover { background: #F0F2F5; color: #B93A3A; }
+[data-mantine-color-scheme='dark'] .app-navbar .mantine-NavLink-root:hover,
+[data-mantine-color-scheme='dark'] .app-navbar .logout-btn:hover { background: var(--mantine-color-dark-5); }
+
+/* ---- Encabezado de página: plano, con línea inferior ---- */
+.page-header {
+  box-shadow: none !important;
+  border: 1px solid var(--border-soft) !important;
+  background: #FFFFFF;
+}
+.page-header__title { color: var(--text-strong); font-size: 20px; letter-spacing: -0.01em; }
+[data-mantine-color-scheme='dark'] .page-header { background: var(--mantine-color-dark-7); border-color: var(--mantine-color-dark-4) !important; }
+[data-mantine-color-scheme='dark'] .page-header__title { color: #fff; }
+
+/* ---- Tarjetas y paneles: blancos, borde fino, sin sombra ---- */
+.mantine-Paper-root, .mantine-Card-root { box-shadow: none; }
+.mantine-Paper-root[data-with-border], .mantine-Card-root[data-with-border] { border-color: var(--border-soft); }
+
+/* ---- Tablas: cabecera gris claro, filas limpias ---- */
+.mantine-Paper-root:has(> .mantine-Table-scrollContainer) { overflow: hidden; }
+.mantine-Table-table thead tr th {
+  background: #F1F3F6;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+}
+.mantine-Table-table tbody tr td { border-color: #EDEFF3; vertical-align: middle; font-size: 14px; }
+.mantine-Table-table[data-striped] tbody tr:nth-of-type(even) { background: #FAFBFC; }
+.mantine-Table-table[data-hover] tbody tr:hover { background: #F0F4F9 !important; }
+[data-mantine-color-scheme='dark'] .mantine-Table-table thead tr th { background: var(--mantine-color-dark-6); color: var(--mantine-color-dark-1); border-color: var(--mantine-color-dark-4); }
+[data-mantine-color-scheme='dark'] .mantine-Table-table[data-striped] tbody tr:nth-of-type(even) { background: rgba(255,255,255,0.03); }
+[data-mantine-color-scheme='dark'] .mantine-Table-table[data-hover] tbody tr:hover { background: rgba(255,255,255,0.06) !important; }
+
+/* ---- Modales y cajones: cabecera blanca con separador ---- */
+.mantine-Modal-header, .mantine-Drawer-header {
+  border-bottom: 1px solid var(--border-soft);
+  padding: 14px 20px;
+  margin-bottom: 8px;
+}
+.mantine-Modal-title, .mantine-Drawer-title { color: var(--text-strong); font-weight: 700; font-size: 16px; }
+[data-mantine-color-scheme='dark'] .mantine-Modal-title,
+[data-mantine-color-scheme='dark'] .mantine-Drawer-title { color: #fff; }
+.mantine-Modal-body, .mantine-Drawer-body { padding-top: 12px; }
+
+/* ---- Botones y campos ---- */
+.mantine-Button-root { box-shadow: none; }
+.mantine-Button-root[data-variant='default'] { border-color: #CDD3DB; font-weight: 600; }
+.mantine-Input-input { border-color: #CDD3DB; }
+.mantine-Input-input:focus, .mantine-Input-input:focus-within {
+  border-color: var(--mantine-color-brand-6);
+  box-shadow: 0 0 0 2px rgba(47, 95, 150, 0.15);
+}
+
+/* ---- Login: fondo gris liso ---- */
+.login-bg { background: var(--surface-bg); }
+.login-card { border: 1px solid var(--border-soft); box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08) !important; }
